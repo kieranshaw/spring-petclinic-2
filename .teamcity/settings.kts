@@ -29,14 +29,25 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 version = "2019.2"
 
 project {
+
     buildType(FeaturesBuild)
-    buildType(Build)
-    buildType(IntegrationTest)
-    buildType(PerformanceTest)
-    buildType(AggregatedTests)
-    buildType(DeployDev)
-    buildType(AcceptanceTestDev)
-    buildType(DeployTest)
+
+    val masterBuildChain = sequential {
+        buildType(Build)
+        parallel {
+            buildType(IntegrationTest)
+            buildType(PerformanceTest)
+        }
+        buildType(AggregatedTests)
+        buildType(DeployDev)
+        buildType(AcceptanceTestDev)
+        buildType(DeployTest)
+    }
+
+    masterBuildChain.buildTypes().forEach { buildType(it) }
+
+
+
 }
 
 object FeaturesBuild : BuildType({
@@ -105,10 +116,6 @@ object IntegrationTest : BuildType({
         }
     }
 
-    dependencies {
-        snapshot(Build) {}
-    }
-
 })
 
 object PerformanceTest : BuildType({
@@ -126,10 +133,6 @@ object PerformanceTest : BuildType({
         }
     }
 
-    dependencies {
-        snapshot(Build) {}
-    }
-
 })
 
 object AggregatedTests : BuildType({
@@ -140,11 +143,6 @@ object AggregatedTests : BuildType({
     vcs {
         root(DslContext.settingsRoot)
         branchFilter = "+:<default>"
-    }
-
-    dependencies {
-        snapshot(IntegrationTest) {}
-        snapshot(PerformanceTest) {}
     }
 
 })
@@ -170,7 +168,6 @@ object DeployDev : BuildType({
             buildRule = sameChainOrLastFinished()
             artifactRules = "**/*.jar"
         }
-        snapshot(AggregatedTests) {}
     }
 
     features {
@@ -204,10 +201,6 @@ object AcceptanceTestDev : BuildType({
         }
     }
 
-    dependencies {
-        snapshot(DeployDev) {}
-    }
-
 })
 
 object DeployTest : BuildType({
@@ -231,7 +224,6 @@ object DeployTest : BuildType({
             buildRule = sameChainOrLastFinished()
             artifactRules = "**/*.jar"
         }
-        snapshot(AcceptanceTestDev) {}
     }
 
     features {
