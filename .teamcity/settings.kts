@@ -29,25 +29,14 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 version = "2019.2"
 
 project {
-
     buildType(FeaturesBuild)
-
-    val masterBuildChain = sequential {
-        buildType(Build)
-        parallel {
-            buildType(IntegrationTest)
-            buildType(PerformanceTest)
-        }
-        buildType(AggregatedTests)
-        buildType(DeployDev)
-        buildType(AcceptanceTestDev)
-        buildType(DeployTest)
-    }
-
-    masterBuildChain.buildTypes().forEach { buildType(it) }
-
-
-
+    buildType(Build)
+    buildType(IntegrationTest)
+    buildType(PerformanceTest)
+    buildType(AggregatedTests)
+    buildType(DeployDev)
+    buildType(AcceptanceTestDev)
+    buildType(DeployTest)
 }
 
 object FeaturesBuild : BuildType({
@@ -116,6 +105,9 @@ object IntegrationTest : BuildType({
         }
     }
 
+    dependencies {
+        snapshot(Build) {}
+    }
 })
 
 object PerformanceTest : BuildType({
@@ -133,6 +125,9 @@ object PerformanceTest : BuildType({
         }
     }
 
+    dependencies {
+        snapshot(Build) {}
+    }
 })
 
 object AggregatedTests : BuildType({
@@ -145,6 +140,10 @@ object AggregatedTests : BuildType({
         branchFilter = "+:<default>"
     }
 
+    dependencies {
+        snapshot(IntegrationTest) {}
+        snapshot(PerformanceTest) {}
+    }
 })
 
 object DeployDev : BuildType({
@@ -168,6 +167,7 @@ object DeployDev : BuildType({
             buildRule = sameChainOrLastFinished()
             artifactRules = "**/*.jar"
         }
+        snapshot(AggregatedTests) {}
     }
 
     features {
@@ -177,7 +177,6 @@ object DeployDev : BuildType({
             branchFilter = ""
         }
     }
-
 })
 
 object AcceptanceTestDev : BuildType({
@@ -201,6 +200,9 @@ object AcceptanceTestDev : BuildType({
         }
     }
 
+    dependencies {
+        snapshot(DeployDev) {}
+    }
 })
 
 object DeployTest : BuildType({
@@ -224,6 +226,7 @@ object DeployTest : BuildType({
             buildRule = sameChainOrLastFinished()
             artifactRules = "**/*.jar"
         }
+        snapshot(AcceptanceTestDev) {}
     }
 
     features {
@@ -233,5 +236,4 @@ object DeployTest : BuildType({
             branchFilter = ""
         }
     }
-
 })
